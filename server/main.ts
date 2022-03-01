@@ -1,4 +1,15 @@
-/*async function main() {
+import { Prisma, PrismaClient } from "@prisma/client";
+import ExcelJS from 'exceljs';
+import koa from "koa"
+import { ServiceNetwork } from "koa-blocks/ServiceNetwork";
+import { MemoryStore, SessionService } from "koa-blocks/services/SessionService";
+import bodyParser from "koa-bodyparser"
+import Router from "@koa/router";
+import SearchController from "./controllers/search-controller";
+import EJSRenderer from "./services/EJSRenderer";
+import * as path from "path";
+
+async function main() {
 	console.log("Connecting to database");
 
 	const prisma = new PrismaClient();
@@ -7,7 +18,7 @@
 	console.log("Creating app");
 	
 	const app = new koa();
-	const services = new ServiceNetwork.ServiceNetwork();
+	const services = new ServiceNetwork();
 	
 	const main_router = new Router();
 
@@ -16,30 +27,7 @@
 		expires: 1000 * 60 * 60 * 24
 	}, new MemoryStore()));
 
-	services.add_service(HBSViews, new HBSViews(join(__dirname, "views/"), false));
-	services.add_service(EJSRenderer, new EJSRenderer(join(__dirname, "views/"), false));
-
-	services.add_service(AuthenticationService, new AuthenticationService<User>(services, {
-		get_by_id: async (id: number) => {
-			return await prisma.user.findUnique({
-				where: {
-					id: id
-				}
-			});
-		}
-	}, {
-		algorithm: Algorithm.PBKDF2,
-		rounds: 50000,
-		salt_length: 16,
-		digest: "sha512",
-		encodings: ["base64", "hex"],
-		preferred_encoding: "base64",
-		keylen: 64
-	}));
-
-	services.add_service(UserService, new UserService(services, prisma));
-	services.add_service(DocumentService, new DocumentService(services, prisma));
-	
+	services.add_service(EJSRenderer, new EJSRenderer(path.join(__dirname, "views"), false));
 
 	app.use(async (ctx, next) => {
 		console.log(ctx.url);
@@ -54,21 +42,15 @@
 		app.use(middleware);
 	}
 
-	let main_controller = new MainController(services);
-	let api_controller = new EditorAPIController(services);
-	let user_api_controller = new UserAPIController(services);
-	
-	main_router.use(main_controller.get_routes());
-	main_router.use(api_controller.get_routes());
-	main_router.use(user_api_controller.get_routes());
+	let search_controller = new SearchController(services);
+
+	main_router.use(search_controller.get_routes());
 
 	app.use(main_router.routes());
-
-	app.use(koa_mount("/static", koa_static(path.join(__dirname, "public"))));
 
 	app.listen(8000, () => {
 		console.log("Now listening");
 	});
 }
 
-main();*/
+main();

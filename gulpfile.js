@@ -15,6 +15,12 @@ exports.backend = function backend() {
 		.pipe(dest(backendTsProject.options.outDir))
 }
 
+exports.copy_views = function copy_views() {
+	return src(["./frontend/views/*.ejs", "./frontend/views/**/*.ejs"])
+		.pipe(dest("./build/views/"))
+}
+exports.frontend = parallel(this.copy_views)
 
+exports.frontend_backend = parallel(exports.backend, exports.frontend)
 
-exports.default = exports.backend;
+exports.default = exports.frontend_backend;
